@@ -61,6 +61,8 @@ public class LocalVideoPager extends BaseFragment {
     public void initData() {
         super.initData();
         getData();
+
+
     }
 
     private Handler handler = new Handler() {
@@ -97,14 +99,15 @@ public class LocalVideoPager extends BaseFragment {
                         long duration = cursor.getLong(cursor.getColumnIndex(MediaStore.Video.Media.DURATION));
                         long size = cursor.getLong(cursor.getColumnIndex(MediaStore.Video.Media.SIZE));
                         String data = cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.DATA));
-                        Log.e("TAG", "name==" + name + ",duration==" + duration + ",data===" + data);
 
                         mediaItems.add(new MediaItem(name, duration, size, data));
-                        handler.sendEmptyMessage(0);
+
+
                     }
 
                     cursor.close();
                 }
+
                 handler.sendEmptyMessage(0);
             }
         }.start();

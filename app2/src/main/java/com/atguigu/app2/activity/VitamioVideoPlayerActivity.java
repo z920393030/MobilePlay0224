@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,7 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.atguigu.app2.R;
-import com.atguigu.app2.View.VideoView;
+import com.atguigu.app2.View.VitamioVideoView;
 import com.atguigu.app2.domain.MediaItem;
 import com.atguigu.app2.utils.Utils;
 
@@ -32,8 +31,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import io.vov.vitamio.Vitamio;
 
-public class SystemVideoPlayerActivity extends AppCompatActivity implements View.OnClickListener {
+/**
+ * Created by My on 2017/5/22.
+ */
+
+public class VitamioVideoPlayerActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int PROGRESS = 0;
     private static final int HIDE_MEDIACONTROLLER = 1;
     private static final int SHOW_NET_SPEED = 2;
@@ -41,7 +45,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     private static final int DEFUALT_SCREEN = 0;
     private static final int FULL_SCREEN = 1;
 
-    private VideoView vv;
+    private VitamioVideoView vv;
     private Uri uri;
     private ArrayList<MediaItem> mediaItems;
     ;
@@ -84,7 +88,8 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     private boolean isNetUri = true;
 
     private void findViews() {
-        setContentView(R.layout.activity_system_video_player);
+        Vitamio.isInitialized(getApplicationContext());
+        setContentView(R.layout.activity_vitamio_video_player);
         llTop = (LinearLayout) findViewById(R.id.ll_top);
         tvName = (TextView) findViewById(R.id.tv_name);
         ivBattery = (ImageView) findViewById(R.id.iv_battery);
@@ -101,7 +106,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         btnStartPause = (Button) findViewById(R.id.btn_start_pause);
         btnNext = (Button) findViewById(R.id.btn_next);
         btnSwitchScreen = (Button) findViewById(R.id.btn_switch_screen);
-        vv = (VideoView) findViewById(R.id.vv);
+        vv = (VitamioVideoView) findViewById(R.id.vv);
         ll_buffering = (LinearLayout) findViewById(R.id.ll_buffering);
         tv_net_speed = (TextView) findViewById(R.id.tv_net_speed);
         ll_loading = (LinearLayout)findViewById(R.id.ll_loading);
@@ -207,14 +212,14 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
             switch (msg.what) {
                 case SHOW_NET_SPEED:
                     if(isNetUri){
-                        String netSpeed = utils.getNetSpeed(SystemVideoPlayerActivity.this);
+                        String netSpeed = utils.getNetSpeed(VitamioVideoPlayerActivity.this);
                         tv_loading_net_speed.setText("正在加载中...."+netSpeed);
                         tv_net_speed.setText("正在缓冲...."+netSpeed);
                         sendEmptyMessageDelayed(SHOW_NET_SPEED,1000);
                     }
                     break;
                 case PROGRESS:
-                    int currentPosition = vv.getCurrentPosition();
+                    int currentPosition = (int) vv.getCurrentPosition();
                     seekbarVideo.setProgress(currentPosition);
 
                     tvCurrentTime.setText(utils.stringForTime(currentPosition));
@@ -379,6 +384,8 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                 }
 
 
+
+
                 break;
             case MotionEvent.ACTION_UP:
                 handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
@@ -433,13 +440,12 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     }
 
     private void setListener() {
-        vv.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            //底层准备播放完成的时候回调
+        vv.setOnPreparedListener(new io.vov.vitamio.MediaPlayer.OnPreparedListener() {
             @Override
-            public void onPrepared(MediaPlayer mp) {
+            public void onPrepared(io.vov.vitamio.MediaPlayer mp) {
                 videoWidth = mp.getVideoWidth();
                 videoHeight = mp.getVideoHeight();
-                int duration = vv.getDuration();
+                int duration = (int) vv.getDuration();
                 seekbarVideo.setMax(duration);
                 tvDuration.setText(utils.stringForTime(duration));
                 vv.start();
@@ -455,17 +461,17 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
             }
         });
 
-        vv.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+        vv.setOnErrorListener(new io.vov.vitamio.MediaPlayer.OnErrorListener() {
             @Override
-            public boolean onError(MediaPlayer mp, int what, int extra) {
+            public boolean onError(io.vov.vitamio.MediaPlayer mp, int what, int extra) {
                 startVitamioPlayer();
                 return true;
             }
         });
 
-        vv.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+        vv.setOnCompletionListener(new io.vov.vitamio.MediaPlayer.OnCompletionListener() {
             @Override
-            public void onCompletion(MediaPlayer mp) {
+            public void onCompletion(io.vov.vitamio.MediaPlayer mp) {
                 setNextVideo();
             }
         });
@@ -514,20 +520,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     }
 
     private void startVitamioPlayer() {
-        if(vv != null){
-            vv.stopPlayback();
-        }
-        Intent intent = new Intent(this, VitamioVideoPlayerActivity.class);
-        if(mediaItems != null && mediaItems.size() >0){
-            Bundle bunlder = new Bundle();
-            bunlder.putSerializable("videolist",mediaItems);
-            intent.putExtra("position",position);
-            intent.putExtras(bunlder);
-        }else if(uri != null){
-            intent.setData(uri);
-        }
-        startActivity(intent);
-        finish();
+
     }
 
     private void updateVoiceProgress(int progress) {
@@ -550,7 +543,6 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
             ll_loading.setVisibility(View.VISIBLE);
             vv.setVideoPath(mediaItem.getData());
             tvName.setText(mediaItem.getName());
-
 
             setButtonStatus();
 
@@ -634,18 +626,12 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             currentVoice--;
-            if(currentVoice < 0) {
-                currentVoice = 0;
-            }
             updateVoiceProgress(currentVoice);
             handler.removeMessages(HIDE_MEDIACONTROLLER);
             handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             currentVoice++;
-            if(currentVoice > maxVoice) {
-                currentVoice = maxVoice;
-            }
             updateVoiceProgress(currentVoice);
             handler.removeMessages(HIDE_MEDIACONTROLLER);
             handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
