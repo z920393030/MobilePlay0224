@@ -3,6 +3,8 @@ package com.atguigu.app2.activity;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -14,12 +16,11 @@ import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.atguigu.app2.R;
+import com.atguigu.app2.utils.Utils;
 
-/**
- * Created by My on 2017/5/22.
- */
 
-public class SystemVideoPlayerActivity extends AppCompatActivity  implements View.OnClickListener {
+public class SystemVideoPlayerActivity extends AppCompatActivity implements View.OnClickListener {
+    private static final int PROGRESS = 0;
     private VideoView vv;
     private Uri uri;
 
@@ -39,13 +40,8 @@ public class SystemVideoPlayerActivity extends AppCompatActivity  implements Vie
     private Button btnStartPause;
     private Button btnNext;
     private Button btnSwitchScreen;
+    private Utils utils;
 
-    /**
-     * Find the Views in the layout<br />
-     * <br />
-     * Auto-created on 2017-05-20 11:01:51 by Android Layout Finder
-     * (http://www.buzzingandroid.com/tools/android-layout-finder)
-     */
     private void findViews() {
         setContentView(R.layout.activity_system_video_player);
         llTop = (LinearLayout)findViewById( R.id.ll_top );
@@ -82,23 +78,60 @@ public class SystemVideoPlayerActivity extends AppCompatActivity  implements Vie
         } else if ( v == btnExit ) {
         } else if ( v == btnPre ) {
         } else if ( v == btnStartPause ) {
+            if(vv.isPlaying()){
+                vv.pause();
+                btnStartPause.setBackgroundResource(R.drawable.btn_start_selector);
+            }else {
+                vv.start();
+                btnStartPause.setBackgroundResource(R.drawable.btn_pause_selector);
+            }
         } else if ( v == btnNext ) {
         } else if ( v == btnSwitchScreen ) {
         }
     }
+
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case PROGRESS:
+                    int currentPosition = vv.getCurrentPosition();
+                    seekbarVideo.setProgress(currentPosition);
+                    tvCurrentTime.setText(utils.stringForTime(currentPosition));
+
+                    sendEmptyMessageDelayed(PROGRESS,1000);
+
+                    break;
+            }
+        }
+    };
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        findViews();
-        uri = getIntent().getData();
+        utils = new Utils();
 
+        findViews();
+
+        uri = getIntent().getData();
+        setListener();
+        vv.setVideoURI(uri);
+
+    }
+
+    private void setListener() {
         vv.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mp) {
+                int duration = vv.getDuration();
+                seekbarVideo.setMax(duration);
+                tvDuration.setText(utils.stringForTime(duration));
                 vv.start();
+
+                handler.sendEmptyMessage(PROGRESS);
             }
         });
 
@@ -118,7 +151,29 @@ public class SystemVideoPlayerActivity extends AppCompatActivity  implements Vie
             }
         });
 
-        vv.setVideoURI(uri);
+        seekbarVideo.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if(fromUser){
+                    vv.seekTo(progress);
+                }
 
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
     }
 }
