@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        isGrantExternalRW(this);
         rg_main = (RadioGroup)findViewById(R.id.rg_main);
         initFragment();
         rg_main.setOnCheckedChangeListener(new MyOnCheckedChangeListener());

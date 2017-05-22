@@ -3,13 +3,17 @@ package com.atguigu.app2.pager;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.atguigu.app2.R;
+import com.atguigu.app2.adapter.LocalVideoAdapter;
 import com.atguigu.app2.domain.MediaItem;
 import com.atguigu.app2.fragment.BaseFragment;
 
@@ -23,6 +27,7 @@ public class LocalVideoPager extends BaseFragment {
     private ListView lv;
     private TextView tv_nodata;
     private ArrayList<MediaItem> mediaItems;
+    private LocalVideoAdapter adapter;
 
 
     @Override
@@ -30,11 +35,36 @@ public class LocalVideoPager extends BaseFragment {
         View  view = View.inflate(context, R.layout.fragment_local_video_pager,null);
         lv = (ListView) view.findViewById(R.id.lv);
         tv_nodata = (TextView) view.findViewById(R.id.tv_nodata);
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                MediaItem item = adapter.getItem(position);
+            }
+        });
         return view;
     }
 
     @Override
     public void initData() {
+        getData();
+    }
+
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+
+            if(mediaItems != null && mediaItems.size() >0){
+                tv_nodata.setVisibility(View.GONE);
+                adapter = new LocalVideoAdapter(context,mediaItems);
+                lv.setAdapter(adapter);
+            }else{
+                tv_nodata.setVisibility(View.VISIBLE);
+            }
+        }
+    };
+
+    private void getData() {
         new Thread(){
             public void run(){
                 mediaItems = new ArrayList<MediaItem>();
@@ -56,6 +86,8 @@ public class LocalVideoPager extends BaseFragment {
                         Log.e("TAG","name=="+name+",duration=="+duration+",data==="+data);
 
                         mediaItems.add(new MediaItem(name,duration,size,data));
+
+                        handler.sendEmptyMessage(0);
                     }
 
                     cursor.close();
