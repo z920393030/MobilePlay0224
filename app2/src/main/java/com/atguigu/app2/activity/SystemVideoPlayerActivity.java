@@ -21,9 +21,11 @@ import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.atguigu.app2.R;
+import com.atguigu.app2.domain.MediaItem;
 import com.atguigu.app2.utils.Utils;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 
@@ -31,7 +33,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     private static final int PROGRESS = 0;
     private VideoView vv;
     private Uri uri;
-    private MyBroadCastReceiver receiver;
+    private ArrayList<MediaItem> mediaItems;;
 
     private LinearLayout llTop;
     private TextView tvName;
@@ -50,7 +52,15 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     private Button btnNext;
     private Button btnSwitchScreen;
     private Utils utils;
+    private MyBroadCastReceiver receiver;
+    private int position;
 
+    /**
+     * Find the Views in the layout<br />
+     * <br />
+     * Auto-created on 2017-05-20 11:01:51 by Android Layout Finder
+     * (http://www.buzzingandroid.com/tools/android-layout-finder)
+     */
     private void findViews() {
         setContentView(R.layout.activity_system_video_player);
         llTop = (LinearLayout)findViewById( R.id.ll_top );
@@ -85,7 +95,9 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         if ( v == btnVoice ) {
         } else if ( v == btnSwitchPlayer ) {
         } else if ( v == btnExit ) {
+            finish();
         } else if ( v == btnPre ) {
+            setPreVideo();
         } else if ( v == btnStartPause ) {
             if(vv.isPlaying()){
                 vv.pause();
@@ -95,6 +107,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                 btnStartPause.setBackgroundResource(R.drawable.btn_pause_selector);
             }
         } else if ( v == btnNext ) {
+            setNextVideo();
         } else if ( v == btnSwitchScreen ) {
         }
     }
@@ -107,7 +120,9 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                 case PROGRESS:
                     int currentPosition = vv.getCurrentPosition();
                     seekbarVideo.setProgress(currentPosition);
+
                     tvCurrentTime.setText(utils.stringForTime(currentPosition));
+
                     tvSystemTime.setText(getSystemTime());
 
                     sendEmptyMessageDelayed(PROGRESS,1000);
@@ -130,10 +145,33 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         initData();
 
         findViews();
+        getData();
 
-        uri = getIntent().getData();
         setListener();
-        vv.setVideoURI(uri);
+        setData();
+
+    }
+
+    private void setData() {
+
+        if(mediaItems != null && mediaItems.size() >0){
+
+            MediaItem mediaItem = mediaItems.get(position);
+            tvName.setText(mediaItem.getName());
+            vv.setVideoPath(mediaItem.getData());
+
+        }else if(uri != null){
+            vv.setVideoURI(uri);
+        }
+
+        setButtonStatus();
+
+    }
+
+    private void getData() {
+        uri = getIntent().getData();
+        mediaItems  = (ArrayList<MediaItem>) getIntent().getSerializableExtra("videolist");
+        position = getIntent().getIntExtra("position",0);
 
     }
 
@@ -146,72 +184,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         registerReceiver(receiver,intentFilter);
     }
 
-    private void setListener() {
-        vv.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                int duration = vv.getDuration();
-                seekbarVideo.setMax(duration);
-                tvDuration.setText(utils.stringForTime(duration));
-                vv.start();
-
-                handler.sendEmptyMessage(PROGRESS);
-            }
-        });
-
-        vv.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-            @Override
-            public boolean onError(MediaPlayer mp, int what, int extra) {
-                Toast.makeText(SystemVideoPlayerActivity.this, "播放出错了哦", Toast.LENGTH_SHORT).show();
-                return false;
-            }
-        });
-
-        vv.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                Toast.makeText(SystemVideoPlayerActivity.this, "视频播放完成", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        });
-
-        seekbarVideo.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if(fromUser){
-                    vv.seekTo(progress);
-                }
-
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-    }
-
-    @Override
-    protected void onDestroy() {
-        if(handler != null){
-            handler.removeCallbacksAndMessages(null);
-            handler = null;
-        }
-
-        if(receiver != null){
-            unregisterReceiver(receiver);
-            receiver = null;
-        }
-
-        super.onDestroy();
-
-    }
-
-    class MyBroadCastReceiver extends BroadcastReceiver {
+    class MyBroadCastReceiver extends BroadcastReceiver{
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -242,4 +215,133 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         }
     }
 
+    private void setListener() {
+        vv.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                int duration = vv.getDuration();
+                seekbarVideo.setMax(duration);
+                tvDuration.setText(utils.stringForTime(duration));
+                vv.start();
+
+                handler.sendEmptyMessage(PROGRESS);
+            }
+        });
+
+        vv.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mp, int what, int extra) {
+                Toast.makeText(SystemVideoPlayerActivity.this, "播放出错了哦", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
+
+        vv.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                setNextVideo();
+            }
+        });
+
+        seekbarVideo.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if(fromUser){
+                    vv.seekTo(progress);
+                }
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+    }
+
+    private void setPreVideo() {
+        position--;
+        if(position > 0){
+            MediaItem mediaItem = mediaItems.get(position);
+            vv.setVideoPath(mediaItem.getData());
+            tvName.setText(mediaItem.getName());
+
+            setButtonStatus();
+
+
+        }
+
+    }
+
+    private void setNextVideo() {
+        position++;
+        if(position < mediaItems.size()){
+            MediaItem mediaItem = mediaItems.get(position);
+            vv.setVideoPath(mediaItem.getData());
+            tvName.setText(mediaItem.getName());
+
+            setButtonStatus();
+
+
+        }else{
+            Toast.makeText(this,"退出播放器",Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+    }
+
+    private void setButtonStatus() {
+        if(mediaItems != null && mediaItems.size() >0){
+            setEnable(true);
+
+            if(position ==0){
+                btnPre.setBackgroundResource(R.drawable.btn_pre_gray);
+                btnPre.setEnabled(false);
+            }
+
+            if(position ==mediaItems.size()-1){
+                btnNext.setBackgroundResource(R.drawable.btn_next_gray);
+                btnNext.setEnabled(false);
+            }
+
+        }else if(uri != null){
+            setEnable(false);
+        }
+    }
+
+    private void setEnable(boolean b) {
+        if( b){
+            btnPre.setBackgroundResource(R.drawable.btn_pre_selector);
+            btnNext.setBackgroundResource(R.drawable.btn_next_selector);
+        }else {
+            btnPre.setBackgroundResource(R.drawable.btn_pre_gray);
+            btnNext.setBackgroundResource(R.drawable.btn_next_gray);
+        }
+        btnPre.setEnabled(b);
+        btnNext.setEnabled(b);
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        if(handler != null){
+            handler.removeCallbacksAndMessages(null);
+            handler = null;
+        }
+
+        if(receiver != null){
+            unregisterReceiver(receiver);
+            receiver = null;
+        }
+
+        super.onDestroy();
+
+
+
+    }
 }

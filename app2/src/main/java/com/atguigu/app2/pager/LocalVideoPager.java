@@ -4,6 +4,7 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
@@ -26,25 +27,31 @@ import java.util.ArrayList;
  */
 
 public class LocalVideoPager extends BaseFragment {
+
     private ListView lv;
     private TextView tv_nodata;
     private ArrayList<MediaItem> mediaItems;
     private LocalVideoAdapter adapter;
 
-
     @Override
     public View initView() {
-        View  view = View.inflate(context, R.layout.fragment_local_video_pager,null);
+        Log.e("TAG", "LocalVideoPager-initView");
+        View view = View.inflate(context, R.layout.fragment_local_video_pager, null);
         lv = (ListView) view.findViewById(R.id.lv);
         tv_nodata = (TextView) view.findViewById(R.id.tv_nodata);
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                MediaItem item = adapter.getItem(position);
 
-                Intent intent = new Intent(context,SystemVideoPlayerActivity.class);
-                intent.setDataAndType(Uri.parse(item.getData()),"video/*");
+                Intent intent = new Intent(context, SystemVideoPlayerActivity.class);
+
+                Bundle bunlder = new Bundle();
+                bunlder.putSerializable("videolist",mediaItems);
+                intent.putExtra("position",position);
+                intent.putExtras(bunlder);
                 startActivity(intent);
+
+
             }
         });
         return view;
@@ -52,27 +59,28 @@ public class LocalVideoPager extends BaseFragment {
 
     @Override
     public void initData() {
+        super.initData();
         getData();
     }
 
-    private Handler handler = new Handler(){
+    private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
 
-            if(mediaItems != null && mediaItems.size() >0){
+            if (mediaItems != null && mediaItems.size() > 0) {
                 tv_nodata.setVisibility(View.GONE);
-                adapter = new LocalVideoAdapter(context,mediaItems);
+                adapter = new LocalVideoAdapter(context, mediaItems);
                 lv.setAdapter(adapter);
-            }else{
+            } else {
                 tv_nodata.setVisibility(View.VISIBLE);
             }
         }
     };
 
     private void getData() {
-        new Thread(){
-            public void run(){
+        new Thread() {
+            public void run() {
                 mediaItems = new ArrayList<MediaItem>();
                 ContentResolver resolver = context.getContentResolver();
                 Uri uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
@@ -83,16 +91,15 @@ public class LocalVideoPager extends BaseFragment {
                         MediaStore.Video.Media.DATA//视频播放地址
                 };
                 Cursor cursor = resolver.query(uri, objs, null, null, null);
-                if(cursor != null ){
-                    while (cursor.moveToNext()){
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
                         String name = cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.DISPLAY_NAME));
                         long duration = cursor.getLong(cursor.getColumnIndex(MediaStore.Video.Media.DURATION));
                         long size = cursor.getLong(cursor.getColumnIndex(MediaStore.Video.Media.SIZE));
                         String data = cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.DATA));
-                        Log.e("TAG","name=="+name+",duration=="+duration+",data==="+data);
+                        Log.e("TAG", "name==" + name + ",duration==" + duration + ",data===" + data);
 
-                        mediaItems.add(new MediaItem(name,duration,size,data));
-
+                        mediaItems.add(new MediaItem(name, duration, size, data));
                         handler.sendEmptyMessage(0);
                     }
 
