@@ -1,11 +1,16 @@
 package com.atguigu.app2.activity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -18,11 +23,15 @@ import android.widget.VideoView;
 import com.atguigu.app2.R;
 import com.atguigu.app2.utils.Utils;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 
 public class SystemVideoPlayerActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int PROGRESS = 0;
     private VideoView vv;
     private Uri uri;
+    private MyBroadCastReceiver receiver;
 
     private LinearLayout llTop;
     private TextView tvName;
@@ -99,6 +108,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                     int currentPosition = vv.getCurrentPosition();
                     seekbarVideo.setProgress(currentPosition);
                     tvCurrentTime.setText(utils.stringForTime(currentPosition));
+                    tvSystemTime.setText(getSystemTime());
 
                     sendEmptyMessageDelayed(PROGRESS,1000);
 
@@ -107,12 +117,17 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         }
     };
 
+    private String getSystemTime() {
+        SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
+        return format.format(new Date());
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        utils = new Utils();
+        initData();
 
         findViews();
 
@@ -120,6 +135,15 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         setListener();
         vv.setVideoURI(uri);
 
+    }
+
+    private void initData() {
+        utils = new Utils();
+
+        receiver = new MyBroadCastReceiver();
+        IntentFilter intentFilter  = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(receiver,intentFilter);
     }
 
     private void setListener() {
@@ -173,7 +197,49 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
     @Override
     protected void onDestroy() {
+        if(handler != null){
+            handler.removeCallbacksAndMessages(null);
+            handler = null;
+        }
+
+        if(receiver != null){
+            unregisterReceiver(receiver);
+            receiver = null;
+        }
+
         super.onDestroy();
-        handler.removeCallbacksAndMessages(null);
+
     }
+
+    class MyBroadCastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int level = intent.getIntExtra("level", 0);
+            Log.e("TAG","level=="+level);
+            setBatteryView(level);
+
+        }
+    }
+
+    private void setBatteryView(int level) {
+        if(level <=0){
+            ivBattery.setImageResource(R.drawable.ic_battery_0);
+        }else if(level <= 10){
+            ivBattery.setImageResource(R.drawable.ic_battery_10);
+        }else if(level <=20){
+            ivBattery.setImageResource(R.drawable.ic_battery_20);
+        }else if(level <=40){
+            ivBattery.setImageResource(R.drawable.ic_battery_40);
+        }else if(level <=60){
+            ivBattery.setImageResource(R.drawable.ic_battery_60);
+        }else if(level <=80){
+            ivBattery.setImageResource(R.drawable.ic_battery_80);
+        }else if(level <=100){
+            ivBattery.setImageResource(R.drawable.ic_battery_100);
+        }else {
+            ivBattery.setImageResource(R.drawable.ic_battery_100);
+        }
+    }
+
 }
