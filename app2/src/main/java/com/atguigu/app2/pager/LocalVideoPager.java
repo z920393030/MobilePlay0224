@@ -1,6 +1,7 @@
 package com.atguigu.app2.pager;
 
 import android.content.ContentResolver;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
@@ -13,6 +14,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.atguigu.app2.R;
+import com.atguigu.app2.activity.SystemVideoPlayerActivity;
 import com.atguigu.app2.adapter.LocalVideoAdapter;
 import com.atguigu.app2.domain.MediaItem;
 import com.atguigu.app2.fragment.BaseFragment;
@@ -39,6 +41,10 @@ public class LocalVideoPager extends BaseFragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 MediaItem item = adapter.getItem(position);
+
+                Intent intent = new Intent(context,SystemVideoPlayerActivity.class);
+                intent.setDataAndType(Uri.parse(item.getData()),"video/*");
+                startActivity(intent);
             }
         });
         return view;
