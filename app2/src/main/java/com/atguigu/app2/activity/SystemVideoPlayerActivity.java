@@ -11,6 +11,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -31,6 +33,7 @@ import java.util.Date;
 
 public class SystemVideoPlayerActivity extends AppCompatActivity implements View.OnClickListener {
     private static final int PROGRESS = 0;
+    private static final int HIDE_MEDIACONTROLLER = 1;
     private VideoView vv;
     private Uri uri;
     private ArrayList<MediaItem> mediaItems;;
@@ -54,6 +57,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     private Utils utils;
     private MyBroadCastReceiver receiver;
     private int position;
+    private GestureDetector detector;
 
     /**
      * Find the Views in the layout<br />
@@ -63,31 +67,31 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
      */
     private void findViews() {
         setContentView(R.layout.activity_system_video_player);
-        llTop = (LinearLayout)findViewById( R.id.ll_top );
-        tvName = (TextView)findViewById( R.id.tv_name );
-        ivBattery = (ImageView)findViewById( R.id.iv_battery );
-        tvSystemTime = (TextView)findViewById( R.id.tv_system_time );
-        btnVoice = (Button)findViewById( R.id.btn_voice );
-        seekbarVoice = (SeekBar)findViewById( R.id.seekbar_voice );
-        btnSwitchPlayer = (Button)findViewById( R.id.btn_switch_player );
-        llBottom = (LinearLayout)findViewById( R.id.ll_bottom );
-        tvCurrentTime = (TextView)findViewById( R.id.tv_current_time );
-        seekbarVideo = (SeekBar)findViewById( R.id.seekbar_video );
-        tvDuration = (TextView)findViewById( R.id.tv_duration );
-        btnExit = (Button)findViewById( R.id.btn_exit );
-        btnPre = (Button)findViewById( R.id.btn_pre );
-        btnStartPause = (Button)findViewById( R.id.btn_start_pause );
-        btnNext = (Button)findViewById( R.id.btn_next );
-        btnSwitchScreen = (Button)findViewById( R.id.btn_switch_screen );
-        vv = (VideoView)findViewById(R.id.vv);
+        llTop = (LinearLayout) findViewById(R.id.ll_top);
+        tvName = (TextView) findViewById(R.id.tv_name);
+        ivBattery = (ImageView) findViewById(R.id.iv_battery);
+        tvSystemTime = (TextView) findViewById(R.id.tv_system_time);
+        btnVoice = (Button) findViewById(R.id.btn_voice);
+        seekbarVoice = (SeekBar) findViewById(R.id.seekbar_voice);
+        btnSwitchPlayer = (Button) findViewById(R.id.btn_switch_player);
+        llBottom = (LinearLayout) findViewById(R.id.ll_bottom);
+        tvCurrentTime = (TextView) findViewById(R.id.tv_current_time);
+        seekbarVideo = (SeekBar) findViewById(R.id.seekbar_video);
+        tvDuration = (TextView) findViewById(R.id.tv_duration);
+        btnExit = (Button) findViewById(R.id.btn_exit);
+        btnPre = (Button) findViewById(R.id.btn_pre);
+        btnStartPause = (Button) findViewById(R.id.btn_start_pause);
+        btnNext = (Button) findViewById(R.id.btn_next);
+        btnSwitchScreen = (Button) findViewById(R.id.btn_switch_screen);
+        vv = (VideoView) findViewById(R.id.vv);
 
-        btnVoice.setOnClickListener( this );
-        btnSwitchPlayer.setOnClickListener( this );
-        btnExit.setOnClickListener( this );
-        btnPre.setOnClickListener( this );
-        btnStartPause.setOnClickListener( this );
-        btnNext.setOnClickListener( this );
-        btnSwitchScreen.setOnClickListener( this );
+        btnVoice.setOnClickListener(this);
+        btnSwitchPlayer.setOnClickListener(this);
+        btnExit.setOnClickListener(this);
+        btnPre.setOnClickListener(this);
+        btnStartPause.setOnClickListener(this);
+        btnNext.setOnClickListener(this);
+        btnSwitchScreen.setOnClickListener(this);
     }
 
     @Override
@@ -99,16 +103,22 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         } else if ( v == btnPre ) {
             setPreVideo();
         } else if ( v == btnStartPause ) {
-            if(vv.isPlaying()){
-                vv.pause();
-                btnStartPause.setBackgroundResource(R.drawable.btn_start_selector);
-            }else {
-                vv.start();
-                btnStartPause.setBackgroundResource(R.drawable.btn_pause_selector);
-            }
+            setStartOrPause();
         } else if ( v == btnNext ) {
             setNextVideo();
         } else if ( v == btnSwitchScreen ) {
+        }
+        handler.removeMessages(HIDE_MEDIACONTROLLER);
+        handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER,4000);
+    }
+
+    private void setStartOrPause() {
+        if(vv.isPlaying()){
+            vv.pause();
+            btnStartPause.setBackgroundResource(R.drawable.btn_start_selector);
+        }else {
+            vv.start();
+            btnStartPause.setBackgroundResource(R.drawable.btn_pause_selector);
         }
     }
 
@@ -128,9 +138,36 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                     sendEmptyMessageDelayed(PROGRESS,1000);
 
                     break;
+                case HIDE_MEDIACONTROLLER:
+                    hideMediaController();
+                    break;
             }
         }
     };
+
+
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        detector.onTouchEvent(event);
+        return super.onTouchEvent(event);
+    }
+
+    private boolean isShowMediaController = false;
+
+    private void  hideMediaController(){
+        llBottom.setVisibility(View.INVISIBLE);
+        llTop.setVisibility(View.GONE);
+        isShowMediaController = false;
+    }
+
+    public void showMediaController(){
+        llBottom.setVisibility(View.VISIBLE);
+        llTop.setVisibility(View.VISIBLE);
+        isShowMediaController = true;
+    }
+
 
     private String getSystemTime() {
         SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
@@ -182,6 +219,32 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         IntentFilter intentFilter  = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(receiver,intentFilter);
+
+        detector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public void onLongPress(MotionEvent e) {
+                setStartOrPause();
+                super.onLongPress(e);
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                Toast.makeText(SystemVideoPlayerActivity.this, "双击了", Toast.LENGTH_SHORT).show();
+                return super.onDoubleTap(e);
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                if(isShowMediaController){
+                    hideMediaController();
+                    handler.removeMessages(HIDE_MEDIACONTROLLER);
+                }else {
+                    showMediaController();
+                    handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER,4000);
+                }
+                return super.onSingleTapConfirmed(e);
+            }
+        });
     }
 
     class MyBroadCastReceiver extends BroadcastReceiver{
@@ -254,12 +317,12 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
+                handler.removeMessages(HIDE_MEDIACONTROLLER);
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-
+                handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER,4000);
             }
         });
     }
