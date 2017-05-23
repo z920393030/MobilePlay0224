@@ -383,9 +383,6 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
                     updateVoiceProgress(mVoice);
                 }
 
-
-
-
                 break;
             case MotionEvent.ACTION_UP:
                 handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
