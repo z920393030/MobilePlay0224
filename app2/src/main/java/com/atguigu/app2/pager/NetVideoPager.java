@@ -123,7 +123,7 @@ public class NetVideoPager extends BaseFragment {
             @Override
             public void onSuccess(String result) {
 
-                Log.e("TAG","xUtils联网成功=="+result);
+                Log.e("TAG","xUtils联网成功=="+result);materialRefreshLayout.finishRefresh();
                 processData(result);
                 materialRefreshLayout.finishRefresh();
             }

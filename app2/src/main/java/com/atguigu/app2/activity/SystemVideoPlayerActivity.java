@@ -18,6 +18,7 @@ import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -39,6 +40,8 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     private static final int PROGRESS = 0;
     private static final int HIDE_MEDIACONTROLLER = 1;
     private static final int SHOW_NET_SPEED = 2;
+    private static final int BRIGHTNESS = 3;
+
 
     private static final int DEFUALT_SCREEN = 0;
     private static final int FULL_SCREEN = 1;
@@ -72,6 +75,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     private MyBroadCastReceiver receiver;
     private int position;
     private GestureDetector detector;
+    private TextView text;
 
     private boolean isFullScreen = false;
     private int screenHeight;
@@ -87,6 +91,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
     private void findViews() {
         setContentView(R.layout.activity_system_video_player);
+        text = (TextView) findViewById(R.id.text);
         llTop = (LinearLayout) findViewById(R.id.ll_top);
         tvName = (TextView) findViewById(R.id.tv_name);
         ivBattery = (ImageView) findViewById(R.id.iv_battery);
@@ -106,8 +111,8 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         vv = (VideoView) findViewById(R.id.vv);
         ll_buffering = (LinearLayout) findViewById(R.id.ll_buffering);
         tv_net_speed = (TextView) findViewById(R.id.tv_net_speed);
-        ll_loading = (LinearLayout)findViewById(R.id.ll_loading);
-        tv_loading_net_speed = (TextView)findViewById(R.id.tv_loading_net_speed);
+        ll_loading = (LinearLayout) findViewById(R.id.ll_loading);
+        tv_loading_net_speed = (TextView) findViewById(R.id.tv_loading_net_speed);
         btnVoice.setOnClickListener(this);
         btnSwitchPlayer.setOnClickListener(this);
         btnExit.setOnClickListener(this);
@@ -118,7 +123,6 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
         seekbarVoice.setMax(maxVoice);
         seekbarVoice.setProgress(currentVoice);
-
         handler.sendEmptyMessage(SHOW_NET_SPEED);
     }
 
@@ -223,11 +227,11 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
             super.handleMessage(msg);
             switch (msg.what) {
                 case SHOW_NET_SPEED:
-                    if(isNetUri){
+                    if (isNetUri) {
                         String netSpeed = utils.getNetSpeed(SystemVideoPlayerActivity.this);
-                        tv_loading_net_speed.setText("正在加载中...."+netSpeed);
-                        tv_net_speed.setText("正在缓冲...."+netSpeed);
-                        sendEmptyMessageDelayed(SHOW_NET_SPEED,1000);
+                        tv_loading_net_speed.setText("正在加载中...." + netSpeed);
+                        tv_net_speed.setText("正在缓冲...." + netSpeed);
+                        sendEmptyMessageDelayed(SHOW_NET_SPEED, 1000);
                     }
                     break;
                 case PROGRESS:
@@ -246,12 +250,12 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                         seekbarVideo.setSecondaryProgress(0);
                     }
 
-                    if(isNetUri && vv.isPlaying()){
+                    if (isNetUri && vv.isPlaying()) {
 
                         int duration = currentPosition - preCurrentPosition;
-                        if(duration <500){
+                        if (duration < 500) {
                             ll_buffering.setVisibility(View.VISIBLE);
-                        }else{
+                        } else {
                             ll_buffering.setVisibility(View.GONE);
                         }
 
@@ -263,6 +267,10 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                     break;
                 case HIDE_MEDIACONTROLLER:
                     hideMediaController();
+                    break;
+                case BRIGHTNESS:
+                    text.setVisibility(View.GONE);
+                    handler.removeCallbacksAndMessages(null);
                     break;
             }
         }
@@ -366,8 +374,10 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     }
 
     private float dowY;
+    private float dowX;
     private int mVol;
     private float touchRang;
+    private float endY;
 
 
     @Override
@@ -376,29 +386,68 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 dowY = event.getY();
+                dowX = event.getX();
+                endY = event.getY();
+                if (dowX < screenWidth / 2 && endY-dowY > 8) {
+                    text.setVisibility(View.VISIBLE);
+                }
                 mVol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
                 touchRang = Math.min(screenHeight, screenWidth);
                 handler.removeMessages(HIDE_MEDIACONTROLLER);
+
                 break;
             case MotionEvent.ACTION_MOVE:
-                float endY = event.getY();
+                endY = event.getY();
                 float distanceY = dowY - endY;
-                float delta = (distanceY / touchRang) * maxVoice;
+                if (dowX > screenWidth / 2) {
+                    if (distanceY > 8) {
+                        text.setVisibility(View.VISIBLE);
+                    }
 
+                    float delta = (distanceY / touchRang) * maxVoice;
 
-                if (delta != 0) {
-                    int mVoice = (int) Math.min(Math.max(mVol + delta, 0), maxVoice);
+                    if (delta != 0) {
+                        int mVoice = (int) Math.min(Math.max(mVol + delta, 0), maxVoice);
 
-                    updateVoiceProgress(mVoice);
+                        updateVoiceProgress(mVoice);
+                    }
+                } else {
+                    if (endY-dowY > 8) {
+                        text.setVisibility(View.VISIBLE);
+                    }
+                    final double FLING_MIN_DISTANCE = 0.5;
+                    final double FLING_MIN_VELOCITY = 0.5;
+                    if (distanceY > FLING_MIN_DISTANCE && Math.abs(distanceY) > FLING_MIN_VELOCITY) {
+                        setBrightness(10);
+                    }
+                    if (distanceY < FLING_MIN_DISTANCE && Math.abs(distanceY) > FLING_MIN_VELOCITY) {
+                        setBrightness(-10);
+                    }
                 }
-
 
                 break;
             case MotionEvent.ACTION_UP:
                 handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
+                handler.sendEmptyMessageDelayed(BRIGHTNESS, 3000);
+
                 break;
         }
         return super.onTouchEvent(event);
+    }
+
+    public void setBrightness(float brightness) {
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.screenBrightness = lp.screenBrightness + brightness / 255.0f;
+        if (lp.screenBrightness > 1) {
+            lp.screenBrightness = 1;
+        } else if (lp.screenBrightness < 0.1) {
+            lp.screenBrightness = (float) 0.1;
+        }
+        getWindow().setAttributes(lp);
+
+        float sb = lp.screenBrightness;
+        text.setText("亮度：" + (int) Math.ceil(sb * 100) + "%");
+
     }
 
     private boolean isShowMediaController = false;
@@ -464,9 +513,9 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
                 setVideoType(DEFUALT_SCREEN);
 
-                if(vv.isPlaying()){
+                if (vv.isPlaying()) {
                     btnStartPause.setBackgroundResource(R.drawable.btn_pause_selector);
-                }else {
+                } else {
                     btnStartPause.setBackgroundResource(R.drawable.btn_start_selector);
                 }
 
@@ -532,16 +581,16 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     }
 
     private void startVitamioPlayer() {
-        if(vv != null){
+        if (vv != null) {
             vv.stopPlayback();
         }
         Intent intent = new Intent(this, VitamioVideoPlayerActivity.class);
-        if(mediaItems != null && mediaItems.size() >0){
+        if (mediaItems != null && mediaItems.size() > 0) {
             Bundle bunlder = new Bundle();
-            bunlder.putSerializable("videolist",mediaItems);
-            intent.putExtra("position",position);
+            bunlder.putSerializable("videolist", mediaItems);
+            intent.putExtra("position", position);
             intent.putExtras(bunlder);
-        }else if(uri != null){
+        } else if (uri != null) {
             intent.setData(uri);
         }
         startActivity(intent);
@@ -557,7 +606,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
         } else {
             isMute = false;
         }
-
+        text.setText("音量：" + 100 * currentVoice / maxVoice + "%");
     }
 
     private void setPreVideo() {
@@ -577,7 +626,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
     private void setNextVideo() {
         position++;
-        if (position <= mediaItems.size()) {
+        if (position < mediaItems.size()) {
             MediaItem mediaItem = mediaItems.get(position);
             isNetUri = utils.isNetUri(mediaItem.getData());
             ll_loading.setVisibility(View.VISIBLE);
