@@ -2,6 +2,7 @@ package com.atguigu.app2.activity;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
@@ -9,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.view.GestureDetector;
@@ -31,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import io.vov.vitamio.MediaPlayer;
 import io.vov.vitamio.Vitamio;
 
 /**
@@ -109,8 +112,8 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
         vv = (VitamioVideoView) findViewById(R.id.vv);
         ll_buffering = (LinearLayout) findViewById(R.id.ll_buffering);
         tv_net_speed = (TextView) findViewById(R.id.tv_net_speed);
-        ll_loading = (LinearLayout)findViewById(R.id.ll_loading);
-        tv_loading_net_speed = (TextView)findViewById(R.id.tv_loading_net_speed);
+        ll_loading = (LinearLayout) findViewById(R.id.ll_loading);
+        tv_loading_net_speed = (TextView) findViewById(R.id.tv_loading_net_speed);
         btnVoice.setOnClickListener(this);
         btnSwitchPlayer.setOnClickListener(this);
         btnExit.setOnClickListener(this);
@@ -135,6 +138,7 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
 
 
         } else if (v == btnSwitchPlayer) {
+            switchPlayer();
         } else if (v == btnExit) {
             finish();
         } else if (v == btnPre) {
@@ -153,6 +157,20 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
 
         handler.removeMessages(HIDE_MEDIACONTROLLER);
         handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
+    }
+
+    private void switchPlayer() {
+        new AlertDialog.Builder(this)
+                .setTitle("提示")
+                .setMessage("如果当前为万能播放器播放，当播放有色块，播放质量不好，请切换到系统播放器播放")
+                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        startSystemPlayer();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void updateVoice(boolean isMute) {
@@ -211,11 +229,11 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
             super.handleMessage(msg);
             switch (msg.what) {
                 case SHOW_NET_SPEED:
-                    if(isNetUri){
+                    if (isNetUri) {
                         String netSpeed = utils.getNetSpeed(VitamioVideoPlayerActivity.this);
-                        tv_loading_net_speed.setText("正在加载中...."+netSpeed);
-                        tv_net_speed.setText("正在缓冲...."+netSpeed);
-                        sendEmptyMessageDelayed(SHOW_NET_SPEED,1000);
+                        tv_loading_net_speed.setText("正在加载中...." + netSpeed);
+                        tv_net_speed.setText("正在缓冲...." + netSpeed);
+                        sendEmptyMessageDelayed(SHOW_NET_SPEED, 1000);
                     }
                     break;
                 case PROGRESS:
@@ -235,12 +253,12 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
                         seekbarVideo.setSecondaryProgress(0);
                     }
 
-                    if(isNetUri && vv.isPlaying()){
+                    if (isNetUri && vv.isPlaying()) {
 
                         int duration = currentPosition - preCurrentPosition;
-                        if(duration <500){
+                        if (duration < 500) {
                             ll_buffering.setVisibility(View.VISIBLE);
-                        }else{
+                        } else {
                             ll_buffering.setVisibility(View.GONE);
                         }
 
@@ -274,7 +292,6 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
 
         setListener();
         setData();
-
 
 
     }
@@ -368,7 +385,7 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
             case MotionEvent.ACTION_DOWN:
                 dowY = event.getY();
                 mVol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
-                touchRang = Math.min(screenHeight, screenWidth);
+                touchRang = Math.min(screenHeight, screenWidth);//screenHeight
                 handler.removeMessages(HIDE_MEDIACONTROLLER);
                 break;
             case MotionEvent.ACTION_MOVE:
@@ -382,6 +399,7 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
 
                     updateVoiceProgress(mVoice);
                 }
+
 
                 break;
             case MotionEvent.ACTION_UP:
@@ -437,9 +455,9 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
     }
 
     private void setListener() {
-        vv.setOnPreparedListener(new io.vov.vitamio.MediaPlayer.OnPreparedListener() {
+        vv.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
-            public void onPrepared(io.vov.vitamio.MediaPlayer mp) {
+            public void onPrepared(MediaPlayer mp) {
                 videoWidth = mp.getVideoWidth();
                 videoHeight = mp.getVideoHeight();
                 int duration = (int) vv.getDuration();
@@ -458,17 +476,17 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
             }
         });
 
-        vv.setOnErrorListener(new io.vov.vitamio.MediaPlayer.OnErrorListener() {
+        vv.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
-            public boolean onError(io.vov.vitamio.MediaPlayer mp, int what, int extra) {
-                startVitamioPlayer();
+            public boolean onError(MediaPlayer mp, int what, int extra) {
+                showErrorDialog();
                 return true;
             }
         });
 
-        vv.setOnCompletionListener(new io.vov.vitamio.MediaPlayer.OnCompletionListener() {
+        vv.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
-            public void onCompletion(io.vov.vitamio.MediaPlayer mp) {
+            public void onCompletion(MediaPlayer mp) {
                 setNextVideo();
             }
         });
@@ -516,8 +534,34 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
 
     }
 
-    private void startVitamioPlayer() {
+    private void showErrorDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("提示")
+                .setMessage("当前视频不可播放，请检查网络或者视频文件是否有损坏！")
+                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                })
+                .show();
+    }
 
+    private void startSystemPlayer() {
+        if(vv != null){
+            vv.stopPlayback();
+        }
+        Intent intent = new Intent(this, SystemVideoPlayerActivity.class);
+        if(mediaItems != null && mediaItems.size() >0){
+            Bundle bunlder = new Bundle();
+            bunlder.putSerializable("videolist",mediaItems);
+            intent.putExtra("position",position);
+            intent.putExtras(bunlder);
+        }else if(uri != null){
+            intent.setData(uri);
+        }
+        startActivity(intent);
+        finish();
     }
 
     private void updateVoiceProgress(int progress) {
@@ -542,7 +586,6 @@ public class VitamioVideoPlayerActivity extends AppCompatActivity implements Vie
             tvName.setText(mediaItem.getName());
 
             setButtonStatus();
-
 
         }
 

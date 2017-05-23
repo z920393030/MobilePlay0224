@@ -2,6 +2,7 @@ package com.atguigu.app2.activity;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
@@ -10,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.view.GestureDetector;
@@ -130,6 +132,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
 
         } else if (v == btnSwitchPlayer) {
+            switchPlayer();
         } else if (v == btnExit) {
             finish();
         } else if (v == btnPre) {
@@ -148,6 +151,20 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
         handler.removeMessages(HIDE_MEDIACONTROLLER);
         handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
+    }
+
+    private void switchPlayer() {
+        new AlertDialog.Builder(this)
+                .setTitle("提示")
+                .setMessage("当前使用系统播放器播放，当播放有声音没有画面，请切换到万能播放器播放")
+                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        startVitamioPlayer();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void updateVoice(boolean isMute) {
@@ -220,7 +237,6 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                     tvCurrentTime.setText(utils.stringForTime(currentPosition));
 
                     tvSystemTime.setText(getSystemTime());
-
                     if (isNetUri) {
                         int bufferPercentage = vv.getBufferPercentage();
                         int totalBuffer = bufferPercentage * seekbarVideo.getMax();
@@ -269,8 +285,6 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
         setListener();
         setData();
-
-
 
     }
 
@@ -434,7 +448,6 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
     private void setListener() {
         vv.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            //底层准备播放完成的时候回调
             @Override
             public void onPrepared(MediaPlayer mp) {
                 videoWidth = mp.getVideoWidth();
@@ -443,7 +456,6 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                 seekbarVideo.setMax(duration);
                 tvDuration.setText(utils.stringForTime(duration));
                 vv.start();
-
                 handler.sendEmptyMessage(PROGRESS);
 
                 ll_loading.setVisibility(View.GONE);
@@ -451,6 +463,12 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                 hideMediaController();
 
                 setVideoType(DEFUALT_SCREEN);
+
+                if(vv.isPlaying()){
+                    btnStartPause.setBackgroundResource(R.drawable.btn_pause_selector);
+                }else {
+                    btnStartPause.setBackgroundResource(R.drawable.btn_start_selector);
+                }
 
             }
         });
@@ -551,9 +569,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
             vv.setVideoPath(mediaItem.getData());
             tvName.setText(mediaItem.getName());
 
-
             setButtonStatus();
-
 
         }
 
@@ -619,7 +635,6 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
             handler.removeCallbacksAndMessages(null);
             handler = null;
         }
-
         if (receiver != null) {
             unregisterReceiver(receiver);
             receiver = null;
@@ -634,18 +649,12 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             currentVoice--;
-            if(currentVoice < 0) {
-                currentVoice = 0;
-            }
             updateVoiceProgress(currentVoice);
             handler.removeMessages(HIDE_MEDIACONTROLLER);
             handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             currentVoice++;
-            if(currentVoice > maxVoice) {
-                currentVoice = maxVoice;
-            }
             updateVoiceProgress(currentVoice);
             handler.removeMessages(HIDE_MEDIACONTROLLER);
             handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
