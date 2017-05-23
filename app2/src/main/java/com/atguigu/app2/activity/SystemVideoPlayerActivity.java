@@ -562,7 +562,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
     private void setPreVideo() {
         position--;
-        if (position > 0) {
+        if (position >= 0) {
             MediaItem mediaItem = mediaItems.get(position);
             isNetUri = utils.isNetUri(mediaItem.getData());
             ll_loading.setVisibility(View.VISIBLE);
@@ -577,7 +577,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
 
     private void setNextVideo() {
         position++;
-        if (position < mediaItems.size()) {
+        if (position <= mediaItems.size()) {
             MediaItem mediaItem = mediaItems.get(position);
             isNetUri = utils.isNetUri(mediaItem.getData());
             ll_loading.setVisibility(View.VISIBLE);
