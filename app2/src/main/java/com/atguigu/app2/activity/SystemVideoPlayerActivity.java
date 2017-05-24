@@ -269,8 +269,9 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                     hideMediaController();
                     break;
                 case BRIGHTNESS:
-                    text.setVisibility(View.GONE);
                     handler.removeCallbacksAndMessages(null);
+                    text.setVisibility(View.GONE);
+
                     break;
             }
         }
@@ -388,7 +389,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                 dowY = event.getY();
                 dowX = event.getX();
                 endY = event.getY();
-                if (dowX < screenWidth / 2 && endY-dowY > 8) {
+                if (dowX < screenWidth / 2 && Math.abs(endY-dowY) > 8) {
                     text.setVisibility(View.VISIBLE);
                 }
                 mVol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
@@ -400,7 +401,7 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                 endY = event.getY();
                 float distanceY = dowY - endY;
                 if (dowX > screenWidth / 2) {
-                    if (distanceY > 8) {
+                    if (Math.abs(endY-dowY) > 8) {
                         text.setVisibility(View.VISIBLE);
                     }
 
@@ -412,7 +413,8 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                         updateVoiceProgress(mVoice);
                     }
                 } else {
-                    if (endY-dowY > 8) {
+
+                    if (Math.abs(endY-dowY) > 8) {
                         text.setVisibility(View.VISIBLE);
                     }
                     final double FLING_MIN_DISTANCE = 0.5;
@@ -423,12 +425,15 @@ public class SystemVideoPlayerActivity extends AppCompatActivity implements View
                     if (distanceY < FLING_MIN_DISTANCE && Math.abs(distanceY) > FLING_MIN_VELOCITY) {
                         setBrightness(-10);
                     }
+
                 }
 
                 break;
             case MotionEvent.ACTION_UP:
-                handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
+
                 handler.sendEmptyMessageDelayed(BRIGHTNESS, 3000);
+                handler.sendEmptyMessageDelayed(HIDE_MEDIACONTROLLER, 4000);
+
 
                 break;
         }
