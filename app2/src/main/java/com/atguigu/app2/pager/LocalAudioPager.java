@@ -33,7 +33,6 @@ public class LocalAudioPager extends BaseFragment {
 
     @Override
     public View initView() {
-        Log.e("TAG", "LocalVideoPager-initView");
         View view = View.inflate(context, R.layout.fragment_local_video_pager, null);
         lv = (ListView) view.findViewById(R.id.lv);
         tv_nodata = (TextView) view.findViewById(R.id.tv_nodata);
