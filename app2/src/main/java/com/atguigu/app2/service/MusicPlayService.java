@@ -1,5 +1,8 @@
 package com.atguigu.app2.service;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -13,6 +16,8 @@ import android.support.annotation.Nullable;
 import android.widget.Toast;
 
 import com.atguigu.app2.IMusicPlayService;
+import com.atguigu.app2.R;
+import com.atguigu.app2.activity.AudioPlayerActivity;
 import com.atguigu.app2.domain.MediaItem;
 
 import java.io.IOException;
@@ -94,6 +99,7 @@ public class MusicPlayService extends Service {
     private int position;
     private MediaItem mediaItem;
     public static final String OPEN_COMPLETE = "com.atguigu.mobileplayer.OPEN_COMPLETE";
+    private NotificationManager nm;
 
     @Override
     public void onCreate() {
@@ -149,7 +155,7 @@ public class MusicPlayService extends Service {
         this.position = position;
         if (mediaItems != null && mediaItems.size() > 0) {
 
-            if(position < mediaItems.size()){
+            if (position < mediaItems.size()) {
                 mediaItem = mediaItems.get(position);
 
                 if (mediaPlayer != null) {
@@ -177,7 +183,7 @@ public class MusicPlayService extends Service {
 
     }
 
-    class MyOnPreparedListener implements MediaPlayer.OnPreparedListener{
+    class MyOnPreparedListener implements MediaPlayer.OnPreparedListener {
 
         @Override
         public void onPrepared(MediaPlayer mp) {
@@ -191,7 +197,7 @@ public class MusicPlayService extends Service {
         sendBroadcast(intent);
     }
 
-    class MyOnErrorListener implements MediaPlayer.OnErrorListener{
+    class MyOnErrorListener implements MediaPlayer.OnErrorListener {
         @Override
         public boolean onError(MediaPlayer mp, int what, int extra) {
             next();
@@ -199,7 +205,7 @@ public class MusicPlayService extends Service {
         }
     }
 
-    class MyOnCompletionListener implements MediaPlayer.OnCompletionListener{
+    class MyOnCompletionListener implements MediaPlayer.OnCompletionListener {
 
         @Override
         public void onCompletion(MediaPlayer mp) {
@@ -209,10 +215,23 @@ public class MusicPlayService extends Service {
 
     private void start() {
         mediaPlayer.start();
+        nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        Intent intent = new Intent(this, AudioPlayerActivity.class);
+        intent.putExtra("notification", true);
+        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        Notification notifation = new Notification.Builder(this)
+                .setSmallIcon(R.drawable.notification_music_playing)
+                .setContentTitle("321音乐")
+                .setContentText("正在播放：" + getAudioName())
+                .setContentIntent(pi)
+                .build();
+        nm.notify(1, notifation);
+
     }
 
     private void pause() {
         mediaPlayer.pause();
+        nm.cancel(1);
     }
 
     private String getArtistName() {
