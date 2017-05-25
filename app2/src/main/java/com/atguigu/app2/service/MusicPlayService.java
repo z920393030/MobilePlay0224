@@ -238,6 +238,7 @@ public class MusicPlayService extends Service {
     }
 
     private void seekTo(int position) {
+        mediaPlayer.seekTo(position);
     }
 
     private void next() {
