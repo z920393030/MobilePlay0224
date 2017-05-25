@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -92,7 +93,18 @@ public class MusicPlayService extends Service {
         public boolean isPlaying() throws RemoteException {
             return mediaPlayer.isPlaying();
         }
+
+        @Override
+        public int getPlaymode() throws RemoteException {
+            return service.getPlaymode();
+        }
+
+        @Override
+        public void setPlaymode(int playmode) throws RemoteException {
+            service.setPlaymode(playmode);
+        }
     };
+
 
     private ArrayList<MediaItem> mediaItems;
     private MediaPlayer mediaPlayer;
@@ -100,10 +112,19 @@ public class MusicPlayService extends Service {
     private MediaItem mediaItem;
     public static final String OPEN_COMPLETE = "com.atguigu.mobileplayer.OPEN_COMPLETE";
     private NotificationManager nm;
+    public static final int REPEAT_NORMAL = 1;
+    public static final int REPEAT_SINGLE = 2;
+    public static final int REPEAT_ALL = 3;
+
+    private int playmode = REPEAT_NORMAL;
+    private boolean isCompletion = false;
+    private SharedPreferences sp;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        sp = getSharedPreferences("atguigu", MODE_PRIVATE);
+        playmode = sp.getInt("playmode", getPlaymode());
         getData();
     }
 
@@ -169,6 +190,9 @@ public class MusicPlayService extends Service {
                     mediaPlayer.setOnErrorListener(new MyOnErrorListener());
                     mediaPlayer.setOnCompletionListener(new MyOnCompletionListener());
                     mediaPlayer.prepareAsync();
+                    if (playmode == MusicPlayService.REPEAT_SINGLE) {
+                        isCompletion = false;
+                    }
 
 
                 } catch (IOException e) {
@@ -209,6 +233,7 @@ public class MusicPlayService extends Service {
 
         @Override
         public void onCompletion(MediaPlayer mp) {
+            isCompletion = true;
             next();
         }
     }
@@ -261,10 +286,103 @@ public class MusicPlayService extends Service {
     }
 
     private void next() {
+        setNextPosition();
+        openNextPosition();
+    }
+
+    private void setNextPosition() {
+        int playmode = getPlaymode();
+
+        if (playmode == MusicPlayService.REPEAT_NORMAL) {
+            position++;
+        } else if (playmode == MusicPlayService.REPEAT_SINGLE) {
+            if (!isCompletion) {
+                position++;
+            }
+
+        } else if (playmode == MusicPlayService.REPEAT_ALL) {
+            position++;
+            if (position > mediaItems.size() - 1) {
+                position = 0;
+            }
+        }
+    }
+
+    private void openNextPosition() {
+        int playmode = getPlaymode();
+
+        if (playmode == MusicPlayService.REPEAT_NORMAL) {
+            if (position < mediaItems.size()) {
+                openAudio(position);
+
+            } else {
+                position = mediaItems.size() - 1;
+            }
+        } else if (playmode == MusicPlayService.REPEAT_SINGLE) {
+            if (position < mediaItems.size()) {
+                openAudio(position);
+            } else {
+                position = mediaItems.size() - 1;
+            }
+
+        } else if (playmode == MusicPlayService.REPEAT_ALL) {
+            openAudio(position);
+        }
     }
 
     private void pre() {
+        setPrePosition();
+        openPrePosition();
     }
 
+    private void setPrePosition() {
+        int playmode = getPlaymode();
+
+        if (playmode == MusicPlayService.REPEAT_NORMAL) {
+            position--;
+        } else if (playmode == MusicPlayService.REPEAT_SINGLE) {
+            if (!isCompletion) {
+                position--;
+            }
+
+        } else if (playmode == MusicPlayService.REPEAT_ALL) {
+            position--;
+            if (position < 0) {
+                position = mediaItems.size() - 1;
+            }
+        }
+    }
+
+    private void openPrePosition() {
+        int playmode = getPlaymode();
+
+        if (playmode == MusicPlayService.REPEAT_NORMAL) {
+            if (position >= 0) {
+                openAudio(position);
+
+            } else {
+                position = 0;
+            }
+        } else if (playmode == MusicPlayService.REPEAT_SINGLE) {
+            if (position >= 0) {
+                openAudio(position);
+            } else {
+                position = 0;
+            }
+
+        } else if (playmode == MusicPlayService.REPEAT_ALL) {
+            openAudio(position);
+        }
+    }
+
+    public int getPlaymode() {
+        return playmode;
+    }
+
+
+    public void setPlaymode(int playmode) {
+        this.playmode = playmode;
+        sp.edit().putInt("playmode",playmode).commit();
+    }
 
 }
