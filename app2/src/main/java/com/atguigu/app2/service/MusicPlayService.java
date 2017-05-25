@@ -4,15 +4,18 @@ import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
+import android.widget.Toast;
 
 import com.atguigu.app2.IMusicPlayService;
 import com.atguigu.app2.domain.MediaItem;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class MusicPlayService extends Service {
@@ -82,11 +85,15 @@ public class MusicPlayService extends Service {
 
         @Override
         public boolean isPlaying() throws RemoteException {
-            return false;
+            return mediaPlayer.isPlaying();
         }
     };
 
     private ArrayList<MediaItem> mediaItems;
+    private MediaPlayer mediaPlayer;
+    private int position;
+    private MediaItem mediaItem;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -101,11 +108,11 @@ public class MusicPlayService extends Service {
                 ContentResolver resolver = getContentResolver();
                 Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
                 String[] objs = {
-                        MediaStore.Audio.Media.DISPLAY_NAME,
-                        MediaStore.Audio.Media.DURATION,
-                        MediaStore.Audio.Media.SIZE,
-                        MediaStore.Audio.Media.DATA,
-                        MediaStore.Audio.Media.ARTIST
+                        MediaStore.Audio.Media.DISPLAY_NAME,//视频在sdcard上的名称
+                        MediaStore.Audio.Media.DURATION,//视频时长
+                        MediaStore.Audio.Media.SIZE,//视频文件的大小
+                        MediaStore.Audio.Media.DATA,//视频播放地址
+                        MediaStore.Audio.Media.ARTIST//艺术家
                 };
                 Cursor cursor = resolver.query(uri, objs, null, null, null);
                 if (cursor != null) {
@@ -118,8 +125,8 @@ public class MusicPlayService extends Service {
                         String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                         String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
 
-                        if(duration > 10*1000){
-                            mediaItems.add(new MediaItem(name, duration, size, data,artist));
+                        if (duration > 10 * 1000) {
+                            mediaItems.add(new MediaItem(name, duration, size, data, artist));
                         }
 
                     }
@@ -138,14 +145,67 @@ public class MusicPlayService extends Service {
     }
 
     private void openAudio(int position) {
+        this.position = position;
+        if (mediaItems != null && mediaItems.size() > 0) {
 
+            if(position < mediaItems.size()){
+                mediaItem = mediaItems.get(position);
+
+                if (mediaPlayer != null) {
+                    mediaPlayer.reset();
+                    mediaPlayer = null;
+                }
+                try {
+                    mediaPlayer = new MediaPlayer();
+                    mediaPlayer.setDataSource(mediaItem.getData());
+                    mediaPlayer.setOnPreparedListener(new MyOnPreparedListener());
+                    mediaPlayer.setOnErrorListener(new MyOnErrorListener());
+                    mediaPlayer.setOnCompletionListener(new MyOnCompletionListener());
+                    mediaPlayer.prepareAsync();
+
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        } else {
+            Toast.makeText(MusicPlayService.this, "音频还没有加载完成", Toast.LENGTH_SHORT).show();
+        }
+
+
+    }
+
+    class MyOnPreparedListener implements MediaPlayer.OnPreparedListener{
+
+        @Override
+        public void onPrepared(MediaPlayer mp) {
+            start();
+        }
+    }
+
+    class MyOnErrorListener implements MediaPlayer.OnErrorListener{
+        @Override
+        public boolean onError(MediaPlayer mp, int what, int extra) {
+            next();
+            return true;
+        }
+    }
+
+    class MyOnCompletionListener implements MediaPlayer.OnCompletionListener{
+
+        @Override
+        public void onCompletion(MediaPlayer mp) {
+            next();
+        }
     }
 
     private void start() {
+        mediaPlayer.start();
     }
 
     private void pause() {
-
+        mediaPlayer.pause();
     }
 
     private String getArtistName() {

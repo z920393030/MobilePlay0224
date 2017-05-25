@@ -4,7 +4,6 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
@@ -44,10 +43,7 @@ public class LocalAudioPager extends BaseFragment {
 
                 Intent intent = new Intent(context, AudioPlayerActivity.class);
 
-                Bundle bunlder = new Bundle();
-                bunlder.putSerializable("videolist",mediaItems);
                 intent.putExtra("position",position);
-                intent.putExtras(bunlder);
                 startActivity(intent);
 
 
