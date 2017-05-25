@@ -72,7 +72,7 @@ public class LocalVideoPager extends BaseFragment {
 
             if (mediaItems != null && mediaItems.size() > 0) {
                 tv_nodata.setVisibility(View.GONE);
-                adapter = new LocalVideoAdapter(context, mediaItems);
+                adapter = new LocalVideoAdapter(context, mediaItems,true);
                 lv.setAdapter(adapter);
             } else {
                 tv_nodata.setVisibility(View.VISIBLE);
@@ -87,10 +87,10 @@ public class LocalVideoPager extends BaseFragment {
                 ContentResolver resolver = context.getContentResolver();
                 Uri uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
                 String[] objs = {
-                        MediaStore.Video.Media.DISPLAY_NAME,//视频在sdcard上的名称
-                        MediaStore.Video.Media.DURATION,//视频时长
-                        MediaStore.Video.Media.SIZE,//视频文件的大小
-                        MediaStore.Video.Media.DATA//视频播放地址
+                        MediaStore.Video.Media.DISPLAY_NAME,
+                        MediaStore.Video.Media.DURATION,
+                        MediaStore.Video.Media.SIZE,
+                        MediaStore.Video.Media.DATA,
                 };
                 Cursor cursor = resolver.query(uri, objs, null, null, null);
                 if (cursor != null) {
@@ -100,7 +100,9 @@ public class LocalVideoPager extends BaseFragment {
                         long size = cursor.getLong(cursor.getColumnIndex(MediaStore.Video.Media.SIZE));
                         String data = cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.DATA));
 
-                        mediaItems.add(new MediaItem(name, duration, size, data));
+                        if (duration > 10 * 1000) {
+                            mediaItems.add(new MediaItem(name, duration, size, data));
+                        }
 
 
                     }
