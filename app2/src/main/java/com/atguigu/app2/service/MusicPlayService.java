@@ -93,6 +93,7 @@ public class MusicPlayService extends Service {
     private MediaPlayer mediaPlayer;
     private int position;
     private MediaItem mediaItem;
+    public static final String OPEN_COMPLETE = "com.atguigu.mobileplayer.OPEN_COMPLETE";
 
     @Override
     public void onCreate() {
@@ -180,8 +181,14 @@ public class MusicPlayService extends Service {
 
         @Override
         public void onPrepared(MediaPlayer mp) {
+            notifyChange(OPEN_COMPLETE);
             start();
         }
+    }
+
+    private void notifyChange(String action) {
+        Intent intent = new Intent(action);
+        sendBroadcast(intent);
     }
 
     class MyOnErrorListener implements MediaPlayer.OnErrorListener{
@@ -209,11 +216,11 @@ public class MusicPlayService extends Service {
     }
 
     private String getArtistName() {
-        return "";
+        return mediaItem.getArtist();
     }
 
     private String getAudioName() {
-        return "";
+        return mediaItem.getName();
     }
 
 
@@ -222,12 +229,12 @@ public class MusicPlayService extends Service {
     }
 
     private int getDuration() {
-        return 0;
+        return mediaPlayer.getDuration();
     }
 
 
     private int getCurrentPosition() {
-        return 0;
+        return mediaPlayer.getCurrentPosition();
     }
 
     private void seekTo(int position) {
