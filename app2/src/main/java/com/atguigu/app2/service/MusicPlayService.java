@@ -21,6 +21,8 @@ import com.atguigu.app2.R;
 import com.atguigu.app2.activity.AudioPlayerActivity;
 import com.atguigu.app2.domain.MediaItem;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -211,7 +213,7 @@ public class MusicPlayService extends Service {
 
         @Override
         public void onPrepared(MediaPlayer mp) {
-            notifyChange(OPEN_COMPLETE);
+            EventBus.getDefault().post(mediaItem);
             start();
         }
     }
