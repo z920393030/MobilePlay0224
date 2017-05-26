@@ -108,4 +108,8 @@ public class LyricView extends TextView {
         }
         invalidate();
     }
+
+    public void setLyrics(ArrayList<Lyric> lyrics){
+        this.lyrics = lyrics;
+    }
 }

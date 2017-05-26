@@ -12,6 +12,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.widget.Toast;
@@ -271,7 +272,7 @@ public class MusicPlayService extends Service {
 
 
     private String getAudioPath() {
-        return "";
+        return mediaItem.getData();
     }
 
     private int getDuration() {
@@ -309,6 +310,7 @@ public class MusicPlayService extends Service {
             }
         }
     }
+    public static long startTime = 0;
 
     private void openNextPosition() {
         int playmode = getPlaymode();
@@ -330,6 +332,7 @@ public class MusicPlayService extends Service {
         } else if (playmode == MusicPlayService.REPEAT_ALL) {
             openAudio(position);
         }
+        startTime = SystemClock.uptimeMillis();
     }
 
     private void pre() {
