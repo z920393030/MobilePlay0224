@@ -1,2 +1,2 @@
-include ':app', ':app2', ':vitamio'
+include ':app', ':app2', ':vitamio', ':PhotoView_library', ':JiecaovideoDemo', ':RecyclerViewDemo', 'JieCaoVideoPlayer-develop', ':jcvideoplayer-lib'
 
