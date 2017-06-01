@@ -17,6 +17,7 @@ import com.atguigu.app2.pager.LocalAudioPager;
 import com.atguigu.app2.pager.LocalVideoPager;
 import com.atguigu.app2.pager.NetAudioPager;
 import com.atguigu.app2.pager.NetVideoPager;
+import com.atguigu.app2.pager.RecyclerViewPager;
 
 import java.util.ArrayList;
 
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         fragments.add(new LocalAudioPager());
         fragments.add(new NetAudioPager());
         fragments.add(new NetVideoPager());
+        fragments.add(new RecyclerViewPager());
     }
 
 
@@ -64,6 +66,9 @@ public class MainActivity extends AppCompatActivity {
 
                 case R.id.rb_net_video:
                     position  = 3;
+                    break;
+                case R.id.recyclerview:
+                    position  = 4;
                     break;
             }
             BaseFragment currentFragment = fragments.get(position);
